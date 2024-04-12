@@ -1,0 +1,26 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    background: orange;
+    in-out property<int> counter: 42;
+    callback request-increase-value();
+    HorizontalLayout {
+        Rectangle { background: blue; horizontal-stretch: 1; }
+        Rectangle { background: yellow; width: 100px; }
+        VerticalBox {
+            Rectangle { background: green; vertical-stretch: 1; }
+            Text {
+                text: "Counter: \{root.counter}";
+            }
+            Button {
+                text: "Increase value";
+                clicked => {
+                    root.request-increase-value();
+                }
+            }
+            Rectangle { background: green; vertical-stretch: 1; }
+        }
+        Rectangle { background: yellow; width: 100px; }
+        Rectangle { background: blue; horizontal-stretch: 1; }
+    }
+}

@@ -1,0 +1,11 @@
+[tasks.web-ui-dev]
+command = "wasm-pack"
+args = ["build", "--target", "web", "--dev", "--out-dir", "../../pkg"]
+cwd = "crates/ui"
+workspace = false
+
+[tasks.web-ui]
+command = "wasm-pack"
+args = ["build", "--target", "web", "--out-dir", "../../pkg"]
+cwd = "crates/ui"
+workspace = false
