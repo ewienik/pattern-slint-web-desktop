@@ -9,7 +9,7 @@ wasm-bindgen.workspace = true
 getrandom.workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 slint.workspace = true

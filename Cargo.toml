@@ -12,5 +12,6 @@ tower = { version = "*", features = ["full"] }
 tower-http = { version = "*", features = ["full"] }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
+ui = { path = "crates/ui" }
 wasm-bindgen = "*"
 
