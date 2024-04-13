@@ -4,6 +4,9 @@ resolver = "2"
 
 [workspace.dependencies]
 axum = "*"
+backend = { path = "crates/backend" }
+defs = { path = "crates/defs" }
+frontend = { path = "crates/frontend" }
 getrandom = { version = "*", features = ["js"] }
 slint = "1"
 slint-build = "1"
