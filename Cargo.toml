@@ -17,4 +17,5 @@ tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 ui = { path = "crates/ui" }
 wasm-bindgen = "*"
+wasm-bindgen-futures = "*"
 

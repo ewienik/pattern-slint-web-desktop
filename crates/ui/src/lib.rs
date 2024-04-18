@@ -13,8 +13,11 @@ pub fn start() {
         move || {
             let ui_handle = ui_handle.clone();
             frontend.process_counter(ui_handle.unwrap().get_counter().into(), move |counter| {
-                let ui = ui_handle.unwrap();
-                ui.set_counter(counter.into());
+                slint::invoke_from_event_loop(move || {
+                    let ui = ui_handle.unwrap();
+                    ui.set_counter(counter.into());
+                })
+                .unwrap();
             });
         }
     });

@@ -1,8 +1,8 @@
-pub use implementation::*;
+pub use {defs::Counter, implementation::Frontend};
 
 #[cfg(target_arch = "wasm32")]
 mod implementation {
-    use defs::Counter;
+    use {defs::Counter, std::future::Future};
 
     pub struct Frontend {}
 
@@ -10,8 +10,19 @@ mod implementation {
         pub fn new() -> Self {
             Self {}
         }
-        pub fn process_counter(&self, value: Counter, mut cont: impl FnMut(Counter)) {
-            cont((i32::from(value) + 1).into());
+
+        pub(super) fn spawn(&self, future: impl Future<Output = ()> + 'static) {
+            wasm_bindgen_futures::spawn_local(future);
+        }
+
+        pub fn process_counter_async(
+            &self,
+            value: Counter,
+            cont: impl FnOnce(Counter) + Send + 'static,
+        ) -> impl Future<Output = ()> + Send + 'static {
+            async move {
+                cont((i32::from(value) + 1).into());
+            }
         }
     }
 }
@@ -21,49 +32,42 @@ mod implementation {
     use {
         backend::Backend,
         defs::Counter,
-        proto::Message,
-        tokio::{
-            runtime::Runtime,
-            sync::{mpsc, oneshot},
-        },
+        std::{future::Future, sync::Arc},
+        tokio::runtime::Runtime,
     };
 
-    mod proto {
-        use {defs::Counter, tokio::sync::oneshot};
-
-        #[derive(Debug)]
-        pub(super) enum Message {
-            Counter(Counter, oneshot::Sender<Counter>),
-        }
-    }
-
     pub struct Frontend {
-        tx: mpsc::UnboundedSender<Message>,
-        #[allow(dead_code)]
+        be: Arc<Backend>,
         rt: Runtime,
     }
 
     impl Frontend {
         pub fn new() -> Self {
-            let rt = Runtime::new().unwrap();
-            let (tx, mut rx) = mpsc::unbounded_channel();
-            rt.spawn(async move {
-                let be = Backend::new();
-                while let Some(msg) = rx.recv().await {
-                    match msg {
-                        Message::Counter(counter, tx) => {
-                            tx.send(be.process_counter(counter).await).unwrap();
-                        }
-                    }
-                }
-            });
-            Self { tx, rt }
+            Self {
+                be: Arc::new(Backend::new()),
+                rt: Runtime::new().unwrap(),
+            }
         }
 
-        pub fn process_counter(&self, value: Counter, mut cont: impl FnMut(Counter)) {
-            let (tx, rx) = oneshot::channel();
-            self.tx.send(Message::Counter(value, tx)).unwrap();
-            cont(rx.blocking_recv().unwrap());
+        pub(super) fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+            self.rt.spawn(future);
         }
+
+        pub(super) fn process_counter_async(
+            &self,
+            counter: Counter,
+            cont: impl FnOnce(Counter) + Send + 'static,
+        ) -> impl Future<Output = ()> + Send + 'static {
+            let be = Arc::clone(&self.be);
+            async move {
+                cont(be.process_counter(counter).await);
+            }
+        }
+    }
+}
+
+impl Frontend {
+    pub fn process_counter(&self, counter: Counter, cont: impl FnOnce(Counter) + Send + 'static) {
+        self.spawn(self.process_counter_async(counter, cont));
     }
 }
