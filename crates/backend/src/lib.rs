@@ -1,5 +1,6 @@
 use defs::Counter;
 
+#[derive(Clone)]
 pub struct Backend;
 
 impl Backend {

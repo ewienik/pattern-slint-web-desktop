@@ -1,5 +1,9 @@
 use {
-    axum::Router,
+    axum::{
+        extract::{Path, State},
+        routing, Router,
+    },
+    backend::Backend,
     std::net::SocketAddr,
     tower_http::{
         services::{ServeDir, ServeFile},
@@ -26,9 +30,15 @@ async fn main() {
         listener,
         Router::new()
             .nest_service("/", ServeFile::new("index.html"))
+            .route("/counter/:counter", routing::get(process_counter))
             .nest_service("/pkg", ServeDir::new("pkg"))
-            .layer(TraceLayer::new_for_http()),
+            .layer(TraceLayer::new_for_http())
+            .with_state(Backend::new()),
     )
     .await
     .unwrap();
+}
+
+async fn process_counter(State(be): State<Backend>, Path(counter): Path<i32>) -> String {
+    dbg!(i32::from(be.process_counter(counter.into()).await).to_string())
 }

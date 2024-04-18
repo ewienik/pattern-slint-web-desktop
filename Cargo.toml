@@ -19,3 +19,15 @@ ui = { path = "crates/ui" }
 wasm-bindgen = "*"
 wasm-bindgen-futures = "*"
 
+[workspace.dependencies.web-sys]
+version = "*"
+features = [
+    "Headers",
+    "Location",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "Window",
+]
+

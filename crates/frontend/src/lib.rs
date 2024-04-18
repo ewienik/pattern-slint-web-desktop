@@ -2,7 +2,13 @@ pub use {defs::Counter, implementation::Frontend};
 
 #[cfg(target_arch = "wasm32")]
 mod implementation {
-    use {defs::Counter, std::future::Future};
+    use {
+        defs::Counter,
+        std::future::Future,
+        wasm_bindgen::prelude::*,
+        wasm_bindgen_futures::JsFuture,
+        web_sys::{Request, RequestInit, RequestMode, Response},
+    };
 
     pub struct Frontend {}
 
@@ -17,11 +23,30 @@ mod implementation {
 
         pub fn process_counter_async(
             &self,
-            value: Counter,
-            cont: impl FnOnce(Counter) + Send + 'static,
-        ) -> impl Future<Output = ()> + Send + 'static {
+            counter: Counter,
+            cont: impl FnOnce(Counter) + 'static,
+        ) -> impl Future<Output = ()> + 'static {
             async move {
-                cont((i32::from(value) + 1).into());
+                let mut opts = RequestInit::new();
+                opts.method("GET");
+                opts.mode(RequestMode::Cors);
+
+                let window = web_sys::window().unwrap();
+                let url = format!(
+                    "{}counter/{}",
+                    window.location().href().unwrap(),
+                    i32::from(counter),
+                );
+
+                let request = Request::new_with_str_and_init(&url, &opts).unwrap();
+
+                let resp = JsFuture::from(window.fetch_with_request(&request))
+                    .await
+                    .unwrap();
+                let resp: Response = resp.dyn_into().unwrap();
+                let json = JsFuture::from(resp.json().unwrap()).await.unwrap();
+
+                cont((json.as_f64().unwrap() as i32).into());
             }
         }
     }
